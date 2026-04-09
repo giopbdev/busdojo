@@ -1,0 +1,53 @@
+package {{package}}.kms;
+
+import {{package}}.kms.config.model.KmsConnectionProperties;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.services.kms.KmsAsyncClient;
+import software.amazon.awssdk.services.kms.model.DecryptRequest;
+import software.amazon.awssdk.services.kms.model.EncryptRequest;
+import software.amazon.awssdk.services.kms.model.EncryptionAlgorithmSpec;
+
+import java.util.Base64;
+import java.util.concurrent.ExecutionException;
+
+@Component
+@RequiredArgsConstructor
+public class KmsAdapter // implements ModelRepository from domain
+{
+    private final KmsAsyncClient kmsAsyncClient;
+    private final KmsConnectionProperties kmsProperties;
+
+    public byte[] decrypt(String secretKey) throws ExecutionException, InterruptedException {
+        return kmsAsyncClient.decrypt(getDecryptRequest(secretKey, kmsProperties.keyId()))
+                .get()
+                .plaintext()
+                .asByteArray();
+    }
+
+    public String encrypt(byte[] secretKey) throws ExecutionException, InterruptedException {
+        return Base64.getEncoder().encodeToString(
+                kmsAsyncClient.encrypt(getEncryptRequest(secretKey, kmsProperties.keyId()))
+                        .get()
+                        .ciphertextBlob()
+                        .asByteArray()
+        );
+    }
+
+    private DecryptRequest getDecryptRequest(String secretKey, String keyId) {
+        byte[] decodedSecretKey = Base64.getDecoder().decode(secretKey);
+        return DecryptRequest.builder()
+        .ciphertextBlob(SdkBytes.fromByteArray(decodedSecretKey))
+        .keyId(keyId)
+        .build();
+    }
+
+    private EncryptRequest getEncryptRequest(byte[] secretKey, String keyId) {
+        return EncryptRequest.builder()
+        .plaintext(SdkBytes.fromByteArray(secretKey))
+        .encryptionAlgorithm(EncryptionAlgorithmSpec.SYMMETRIC_DEFAULT)
+        .keyId(keyId)
+        .build();
+    }
+}

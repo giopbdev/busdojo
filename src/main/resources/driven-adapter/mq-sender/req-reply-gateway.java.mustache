@@ -1,0 +1,8 @@
+package {{package}}.mq.reqreply;
+
+import co.com.bancolombia.commons.jms.api.MQRequestReply;
+import co.com.bancolombia.commons.jms.mq.ReqReply;
+
+@ReqReply(requestQueue = "${commons.jms.output-queue}"/*replyQueue = "${commons.jms.input-queue}", queueType = FIXED*/) // TODO: Change the queue name, or use from properties like ${my.queue}
+public interface ReqReplyGateway extends MQRequestReply {
+}

@@ -1,0 +1,58 @@
+package {{package}}.sqs.sender;
+
+import {{package}}.sqs.sender.config.SQSSenderProperties;
+{{#lombok}}
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j2;
+{{/lombok}}
+import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
+import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
+
+@Service
+{{#lombok}}
+@Log4j2
+@RequiredArgsConstructor
+{{/lombok}}
+public class SQSSender /*implements SomeGateway*/ {
+{{^lombok}}
+    private static final org.apache.logging.log4j.Logger log = org.apache.logging.log4j.LogManager.getLogger(SQSSender.class);
+{{/lombok}}
+    private final SQSSenderProperties properties;
+    private final SqsAsyncClient client;
+{{^lombok}}
+
+    public SQSSender(SqsAsyncClient client, SQSSenderProperties properties) {
+        this.client = client;
+        this.properties = properties
+    }
+
+    public String send(String message) {
+        try {
+            SendMessageResponse response = client.sendMessage(buildRequest(message)).get();
+            log.debug("Message sent {}", response.messageId());
+            return response.messageId();
+        } catch (ExecutionException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+{{/lombok}}
+{{#lombok}}
+
+    @SneakyThrows
+    public String send(String message) {
+        SendMessageResponse response = client.sendMessage(buildRequest(message)).get();
+        log.debug("Message sent {}", response.messageId());
+        return response.messageId();
+    }
+{{/lombok}}
+
+    private SendMessageRequest buildRequest(String message) {
+        return SendMessageRequest.builder()
+                .queueUrl(properties.queueUrl())
+                .messageBody(message)
+                .build();
+    }
+}

@@ -1,0 +1,47 @@
+package {{package}}.mq.listener;
+
+import co.com.bancolombia.commons.jms.mq.MQListener;
+{{#metrics}}
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
+{{/metrics}}
+{{#lombok}}
+import lombok.RequiredArgsConstructor;
+{{/lombok}}
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.TextMessage;
+{{#metrics}}
+import java.util.concurrent.TimeUnit;
+{{/metrics}}
+
+@Component
+{{#lombok}}
+@RequiredArgsConstructor
+{{/lombok}}
+public class SampleMQMessageListener {
+    {{#metrics}}
+    private final Timer timer = Metrics.timer("mq_receive_message", "operation", "my-operation"); // TODO: Change operation name
+    {{/metrics}}
+    // private final SampleUseCase useCase;
+
+    {{^lombok}}
+    public SampleMQMessageListener(/*SampleUseCase useCase*/) {
+        // this.useCase = useCase;
+    }
+
+    {{/lombok}}
+    // For fixed queues
+    @MQListener("${commons.jms.input-queue}")
+    public Mono<Void> process(Message message) throws JMSException {
+        {{#metrics}}
+        timer.record(System.currentTimeMillis() - message.getJMSTimestamp(), TimeUnit.MILLISECONDS);
+        {{/metrics}}
+        String text = ((TextMessage) message).getText();
+        // return useCase.sample(text);
+        return Mono.empty();
+    }
+}

@@ -1,0 +1,16 @@
+package {{package}}.kms.config.model;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "adapters.aws.kms")
+public record KmsConnectionProperties(
+        String host,
+        String region,
+        String protocol,
+        Integer port,
+        String keyId) {
+
+    public String getEndpoint() {
+        return String.format("%s://%s:%s", protocol, host, port);
+    }
+}

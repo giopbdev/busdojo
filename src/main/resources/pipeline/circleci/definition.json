@@ -1,0 +1,6 @@
+{
+  "folders": [],
+  "files": {
+    "pipeline/circleci/config.yml.mustache": ".circleci/config.yml"
+  }
+}

@@ -1,0 +1,62 @@
+package {{package}}.s3.config;
+
+import {{package}}.s3.config.model.S3ConnectionProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider;
+{{#metrics}}
+import software.amazon.awssdk.metrics.MetricPublisher;
+{{/metrics}}
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+
+import java.net.URI;
+
+@Configuration
+public class S3Config {
+
+    {{^metrics}}
+    @Profile({"dev", "cer", "pdn"})
+    @Bean
+    public S3Client s3Client(S3ConnectionProperties s3Properties) {
+        return S3Client.builder()
+                .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
+                .region(Region.of(s3Properties.region()))
+                .build();
+    }
+
+    @Profile("local")
+    @Bean
+    public S3Client localS3Client(S3ConnectionProperties s3Properties) {
+        return S3Client.builder()
+                .region(Region.of(s3Properties.region()))
+                .credentialsProvider(ProfileCredentialsProvider.create("default"))
+                .endpointOverride(URI.create(s3Properties.endpoint()))
+                .build();
+    }
+    {{/metrics}}
+    {{#metrics}}
+    @Profile({"dev", "cer", "pdn"})
+    @Bean
+    public S3Client s3Client(S3ConnectionProperties s3Properties, MetricPublisher publisher) {
+        return S3Client.builder()
+                .overrideConfiguration(o -> o.addMetricPublisher(publisher))
+                .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
+                .region(Region.of(s3Properties.region()))
+                .build();
+    }
+
+    @Profile("local")
+    @Bean
+    public S3Client localS3Client(S3ConnectionProperties s3Properties, MetricPublisher publisher) {
+        return S3Client.builder()
+                .endpointOverride(URI.create(s3Properties.endpoint()))
+                .overrideConfiguration(o -> o.addMetricPublisher(publisher))
+                .credentialsProvider(ProfileCredentialsProvider.create("default"))
+                .build();
+    }
+    {{/metrics}}
+
+}

@@ -1,0 +1,7 @@
+{
+  "folders": [],
+  "files": {
+    "driven-adapter/bin-stash/bin-stash-local-cache-config.java.mustache": "infrastructure/driven-adapters/bin-stash/src/main/java/{{packagePath}}/binstash/config/BinStashCacheConfig.java",
+    "driven-adapter/bin-stash/build.gradle.mustache": "infrastructure/driven-adapters/bin-stash/build.gradle"
+  }
+}

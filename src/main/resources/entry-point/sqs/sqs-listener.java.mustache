@@ -1,0 +1,153 @@
+package {{package}}.sqs.listener.helper;
+
+import {{package}}.sqs.listener.config.SQSProperties;
+{{#metrics}}
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
+{{/metrics}}
+{{#lombok}}
+import lombok.Builder;
+import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j2;
+{{/lombok}}
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
+
+{{#lombok}}
+@Log4j2
+@Builder
+{{/lombok}}
+public class SQSListener implements Runnable {
+{{^lombok}}
+    private static final org.apache.logging.log4j.Logger log = org.apache.logging.log4j.LogManager.getLogger(SQSListener.class);
+{{/lombok}}
+    private final SqsAsyncClient client;
+    private final SQSProperties properties;
+    private final Consumer<Message> consumer;
+    {{#metrics}}
+    private Timer timer;
+    {{/metrics}}
+{{^lombok}}
+
+    public SQSListener(final SqsAsyncClient client, final SQSProperties properties, final Consumer<Message> consumer) {
+        this.client = client;
+        this.properties = properties;
+        this.consumer = consumer;
+    }
+{{/lombok}}
+
+    public SQSListener start() {
+        {{#metrics}}
+        this.timer = Metrics.timer("async_operation_flow_duration",
+                "operation", "MessageFrom:" + properties.queueUrl(), "type", "", "status", "");
+        {{/metrics}}
+        ExecutorService service = Executors.newFixedThreadPool(properties.numberOfThreads());
+        for (var i = 0; i < properties.numberOfThreads(); i++) {
+            service.submit(this);
+        }
+        return this;
+    }
+
+    @Override
+    public void run() {
+        while (true) {
+            try {
+                listen();
+            } catch (Exception e) {
+                log.warn("Error from SQS", e);
+            }
+        }
+    }
+
+    private void listen() throws ExecutionException, InterruptedException {
+        ReceiveMessageResponse response = getMessages();
+        log.debug("Processing {} messages", response.messages().size());
+        response.messages()
+                .stream()
+                .parallel()
+                .map(this::process)
+                .forEach(this::confirm);
+    }
+
+    private Message process(Message message) {
+        {{#metrics}}
+        timer.record(() -> consumer.accept(message));
+        {{/metrics}}
+        {{^metrics}}
+        consumer.accept(message);
+        {{/metrics}}
+        return message;
+    }
+
+    @SneakyThrows
+    private void confirm(Message message) {
+        DeleteMessageRequest request = getDeleteMessageRequest(message.receiptHandle());
+        client.deleteMessage(request).get();
+        log.debug("Message confirmed {}", message.messageId());
+    }
+
+    private ReceiveMessageResponse getMessages() throws ExecutionException, InterruptedException {
+        ReceiveMessageRequest request = getReceiveMessageRequest();
+        return client.receiveMessage(request).get();
+    }
+
+    private ReceiveMessageRequest getReceiveMessageRequest() {
+        return ReceiveMessageRequest.builder()
+                .queueUrl(properties.queueUrl())
+                .maxNumberOfMessages(properties.maxNumberOfMessages())
+                .waitTimeSeconds(properties.waitTimeSeconds())
+                .visibilityTimeout(properties.visibilityTimeoutSeconds())
+                .build();
+    }
+
+    private DeleteMessageRequest getDeleteMessageRequest(String receiptHandle) {
+        return DeleteMessageRequest.builder()
+                .queueUrl(properties.queueUrl())
+                .receiptHandle(receiptHandle)
+                .build();
+    }
+
+{{^lombok}}
+
+    public static class SQSListenerBuilder {
+        private SqsAsyncClient client;
+        private SQSProperties properties;
+        private Consumer<Message> consumer;
+
+        SQSListenerBuilder() {
+        }
+
+        public SQSListener.SQSListenerBuilder client(final SqsAsyncClient client) {
+            this.client = client;
+            return this;
+        }
+
+        public SQSListener.SQSListenerBuilder properties(final SQSProperties properties) {
+            this.properties = properties;
+            return this;
+        }
+
+        public SQSListener.SQSListenerBuilder consumer(final Consumer<Message> consumer) {
+            this.consumer = consumer;
+            return this;
+        }
+
+        public SQSListener build() {
+            return new SQSListener(this.client, this.properties, this.consumer);
+        }
+
+    }
+
+    public static SQSListener.SQSListenerBuilder builder() {
+        return new SQSListener.SQSListenerBuilder();
+    }
+{{/lombok}}
+}

@@ -1,0 +1,54 @@
+package {{package}}.kms;
+
+import {{package}}.kms.config.model.KmsConnectionProperties;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.services.kms.KmsAsyncClient;
+import software.amazon.awssdk.services.kms.model.DecryptRequest;
+import software.amazon.awssdk.services.kms.model.DecryptResponse;
+import software.amazon.awssdk.services.kms.model.EncryptRequest;
+import software.amazon.awssdk.services.kms.model.EncryptResponse;
+import software.amazon.awssdk.services.kms.model.EncryptionAlgorithmSpec;
+
+import java.util.Base64;
+
+@Component
+@RequiredArgsConstructor
+public class KmsAdapter // implements ModelRepository from domain
+{
+    private final KmsAsyncClient kmsAsyncClient;
+    private final KmsConnectionProperties kmsProperties;
+
+    public Mono<byte[]> decrypt(String secretKey) {
+        return Mono.fromFuture(kmsAsyncClient.decrypt(getDecryptRequest(secretKey, kmsProperties.keyId())))
+        .map(DecryptResponse::plaintext)
+        .map(SdkBytes::asByteArray)
+        .switchIfEmpty(Mono.error(new Throwable("Error decrypt secret")));
+    }
+
+    public Mono<String> encrypt(byte[] secretKey) {
+        return Mono.fromFuture(kmsAsyncClient.encrypt(getEncryptRequest(secretKey, kmsProperties.keyId())))
+        .map(EncryptResponse::ciphertextBlob)
+        .map(SdkBytes::asByteArray)
+        .map(Base64.getEncoder()::encodeToString)
+        .switchIfEmpty(Mono.error(new Throwable("Error encrypt secret")));
+    }
+
+    private DecryptRequest getDecryptRequest(String secretKey, String keyId) {
+        byte[] decodedSecretKey = Base64.getDecoder().decode(secretKey);
+        return DecryptRequest.builder()
+        .ciphertextBlob(SdkBytes.fromByteArray(decodedSecretKey))
+        .keyId(keyId)
+        .build();
+    }
+
+    private EncryptRequest getEncryptRequest(byte[] secretKey, String keyId) {
+        return EncryptRequest.builder()
+        .plaintext(SdkBytes.fromByteArray(secretKey))
+        .encryptionAlgorithm(EncryptionAlgorithmSpec.SYMMETRIC_DEFAULT)
+        .keyId(keyId)
+        .build();
+    }
+}
