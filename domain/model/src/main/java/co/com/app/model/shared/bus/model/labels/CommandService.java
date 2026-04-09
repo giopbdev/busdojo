@@ -1,4 +1,4 @@
-package co.com.app.model.shared.bus.model;
+package co.com.app.model.shared.bus.model.labels;
 
 
 import java.lang.annotation.ElementType;

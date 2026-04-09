@@ -1,4 +1,4 @@
-package co.com.app.model.shared.common.domain.labels;
+package co.com.app.model.shared.bus.model.labels;
 
 
 import java.lang.annotation.*;
@@ -6,5 +6,5 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Inherited
-public @interface QueryService {
+public @interface QueryServicePrimitive {
 }

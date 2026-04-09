@@ -4,7 +4,7 @@ package co.com.app.usecase.auth.signup.searchuserbyname;
 
 import co.com.app.model.auth.signup.gateway.UserAuthSearchGateway;
 import co.com.app.model.auth.signup.value.UserName;
-import co.com.app.model.shared.common.domain.labels.UseCase;
+import co.com.app.model.shared.common.model.labels.UseCase;
 import co.com.app.model.shared.cqrs.ContextData;
 import co.com.app.model.shared.cqrs.Query;
 import lombok.AllArgsConstructor;

@@ -1,4 +1,4 @@
-package co.com.app.model.shared.common.domain.labels;
+package co.com.app.model.shared.common.model.labels;
 import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)

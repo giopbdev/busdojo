@@ -1,9 +1,9 @@
 package co.com.app.shared.config;
 
 
-import co.com.app.model.shared.bus.model.QueryService;
-import co.com.app.model.shared.bus.model.QueryServicePrimitive;
-import co.com.app.model.shared.common.domain.labels.UseCase;
+import co.com.app.model.shared.bus.model.labels.QueryService;
+import co.com.app.model.shared.bus.model.labels.QueryServicePrimitive;
+import co.com.app.model.shared.common.model.labels.UseCase;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
