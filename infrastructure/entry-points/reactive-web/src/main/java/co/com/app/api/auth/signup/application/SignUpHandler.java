@@ -6,6 +6,7 @@ import co.com.app.model.auth.signup.model.UserSignUp;
 import co.com.app.model.shared.cqrs.Command;
 import co.com.app.model.shared.cqrs.ContextData;
 import co.com.app.usecase.auth.signup.SignUpTradicional;
+import co.com.app.usecase.auth.signup.SignUpBus;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,7 @@ import reactor.core.publisher.Mono;
 @AllArgsConstructor
 public class SignUpHandler {
 
-    private final SignUpTradicional useCase;
+    private final SignUpBus useCase;
 
 
 
